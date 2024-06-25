@@ -1,349 +1,191 @@
-import config from "../config.json";
-import React, { useState, useEffect } from "react";
-import {
-  Button,
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  TextField,
-  Typography,
-} from "@mui/material";
+import React, { useState } from "react";
+import { Button, Typography, Paper, Box, Snackbar, Alert } from "@mui/material";
+import { styled } from "@mui/system";
+import Logo from "../components/Logo";
+import { toast, ToastContainer } from 'react-toastify';
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import 'react-toastify/dist/ReactToastify.css';
+
+const Step = styled('div')(({ active }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 30,
+  height: 30,
+  borderRadius: '50%',
+  backgroundColor: active ? '#1976d2' : '#e0e0e0',
+  color: '#fff',
+}));
+
+const StepConnector = styled('div')(({ active }) => ({
+  flex: 1,
+  height: 4,
+  backgroundColor: active ? '#1976d2' : '#e0e0e0',
+}));
+
+const ProgressBarContainer = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  marginBottom: 50,
+  marginLeft: 300, // Add left margin
+  marginRight: 300, // Add right margin
+});
+
+const FileUploadContainer = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '3px dashed #000000',
+  backgroundColor: '#e0e0e0',
+  padding: 20,
+  marginLeft: 275,
+  marginRight: 300,
+  borderRadius: 10,
+  width: 700,
+  height: 200,
+});
 
 const AddItemPage = () => {
-  const [itemData, setItemData] = useState({
-    itemCode: "",
-    itemName: "",
-    itemDescription: "",
-    itemCategory: "",
-    itemSubCategory: "",
-    purchasePrice: "",
-    sellingPrice: "",
-    unit: "",
-    stockCount: "",
-    lastGRNDate: "",
-    lastPODate: "",
-    lastPurchasePrice: "",
-    remark: "",
-  });
+  const [activeStep, setActiveStep] = useState(2);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isFileSelected, setIsFileSelected] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [categoryOptions, setCategoryOptions] = useState([]);
-  const [subCategoryOptions, setSubCategoryOptions] = useState([]);
-  const [unitOptions, setUnitOptions] = useState([]);
-  const host = config.host;
-
-  useEffect(() => {
-    // Fetch category data
-    axios.get(host + "/api/item/category_list")
-      .then((response) => {
-        if (response.data.length > 0) { // Check if the response contains data
-          setCategoryOptions(response.data);
-        } else {
-          console.error("Failed to fetch categories:", response.data.message);
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching categories:", error);
-      });
-
-    // Fetch sub-category data
-    axios.get(host+"/api/item/sub_category_list")
-      .then((response) => {
-        if (response.data.length > 0) { // Check if the response contains data
-          setSubCategoryOptions(response.data);
-        } else {
-          console.error("Failed to fetch sub-categories:", response.data.message);
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching sub-categories:", error);
-      });
-
-    // Fetch unit data
-    axios.get(host+ "/api/item/unit_list")
-      .then((response) => {
-        if (response.data.length > 0) { // Check if the response contains data
-          setUnitOptions(response.data);
-        } else {
-          console.error("Failed to fetch units:", response.data.message);
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching units:", error);
-      });
-  }, []);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setItemData({
-      ...itemData,
-      [name]: value,
-    });
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === "application/pdf") {
+      setSelectedFile(file);
+      setIsFileSelected(true);
+      setActiveStep(3);
+    } else {
+      setErrorMessage("Only PDF files are allowed.");
+      setSelectedFile(null);
+      setIsFileSelected(false);
+      setActiveStep(2);
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleFileUpload = () => {
+    if (selectedFile) {
+      // Implement file upload logic here
+      console.log("File uploaded:", selectedFile.name);
+      const formData = new FormData();
+      formData.append('year', 2020);
+      formData.append('file', selectedFile);
 
-    // Create a data object in the format expected by your API
-    const requestData = {
-      code: itemData.itemCode,
-      name: itemData.itemName,
-      description: itemData.itemDescription,
-      purchasing_price: parseFloat(itemData.purchasePrice),
-      selling_price: parseFloat(itemData.sellingPrice),
-      unit_id: parseInt(itemData.unit),
-      category_id: parseInt(itemData.itemCategory),
-      sub_category_id: parseInt(itemData.itemSubCategory),
-      stock_count: parseInt(itemData.stockCount),
-      last_grn_date: itemData.lastGRNDate,
-      last_pos_date: itemData.lastPODate,
-      last_purchase_price: parseFloat(itemData.lastPurchasePrice),
-      remark: itemData.remark,
-    };
+      axios
+        .post("http://192.168.202.81:5000/store_data", formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        })
+        .then((response) => {
+          if (response.data.status === false) {
+            console.error("An error occurred:", response.data);
+            toast.error(
+              response.data.message || "An error occurred while updating the item.",
+              { autoClose: 2000 }
+            );
+          } else {
+            console.log("PDF Analyzed Successfully!", response.data);
+            toast.success("PDF Analyzed Successfully!", { autoClose: 2000 });
+            setTimeout(() => {
+               window.location.href = "/result";
+            }, 2000);
+            // Reset file selection after successful upload
+            setSelectedFile(null);
+            setIsFileSelected(false);
+            setActiveStep(2);
+          }
+        })
+        .catch((error) => {
+          console.error("An error occurred:", error);
+          toast.error("An error occurred while making the request.", { autoClose: 2000 });
+        });
+    }
+  };
 
-    // Make a POST request to send the data to your API
-    axios
-      .post(host+"/api/item/add", requestData)
-      .then((response) => {
-        if (response.data.status === false) {
-          // Handle error response here
-          console.error("An error occurred:", response.data);
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setIsFileSelected(false);
+    setActiveStep(2);
+  };
 
-          // Show an error toast with the response message
-          toast.error(response.data.message || "An error occurred while adding the item.", { autoClose: 2000 });
-        } else {
-          // Handle success response here (e.g., show a success message)
-          console.log("Item added successfully:", response.data);
-
-          // Clear the form
-          setItemData({
-            itemCode: "",
-            itemName: "",
-            itemDescription: "",
-            itemCategory: "",
-            itemSubCategory: "",
-            purchasePrice: "",
-            sellingPrice: "",
-            unit: "",
-            stockCount: "",
-            lastGRNDate: "",
-            lastPODate: "",
-            lastPurchasePrice: "",
-            remark: "",
-          });
-
-          // Show a success toast
-          toast.success("Item added successfully!", { autoClose: 2000 });
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred:", error);
-
-        // Show an error toast for any network or server errors
-        toast.error("An error occurred while making the request.", { autoClose: 2000 });
-      });
+  const handleCloseSnackbar = () => {
+    setErrorMessage("");
   };
 
   return (
-    <div style={{ padding: "24px" }}>
+    <Box sx={{ height: '100vh', padding: 4, backgroundColor: '#f0f0f0' }}>
+      <header className="App-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'white', marginBottom: '20px', padding: '10px' }}>
+        <Logo />
+      </header>
       <Paper elevation={3} sx={{ padding: 3 }}>
         <Typography variant="h4" mb={3} align="center">
-          Add a New Item
+          Step Progress Bar
         </Typography>
-        <form onSubmit={handleSubmit}>
-          {/* Basic Info Section */}
-          <Typography variant="h6" mb={2}>
-            Basic Info
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Item Code"
-                name="itemCode"
-                value={itemData.itemCode}
-                onChange={handleChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Item Name"
-                name="itemName"
-                value={itemData.itemName}
-                onChange={handleChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Item Description"
-                name="itemDescription"
-                value={itemData.itemDescription}
-                onChange={handleChange}
-                fullWidth
-                multiline
-                rows={4}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel htmlFor="itemCategory">Item Category</InputLabel>
-                <Select
-                  name="itemCategory"
-                  value={itemData.itemCategory}
-                  onChange={handleChange}
-                  label="Item Category"
-                >
-                  <MenuItem value="">Select Category</MenuItem>
-                  {categoryOptions.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel htmlFor="itemSubCategory">Item Sub Category</InputLabel>
-                <Select
-                  name="itemSubCategory"
-                  value={itemData.itemSubCategory}
-                  onChange={handleChange}
-                  label="Item Sub Category"
-                >
-                  <MenuItem value="">Select Sub Category</MenuItem>
-                  {subCategoryOptions.map((subCategory) => (
-                    <MenuItem key={subCategory.id} value={subCategory.id}>
-                      {subCategory.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Purchase Price"
-                name="purchasePrice"
-                value={itemData.purchasePrice}
-                onChange={handleChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Selling Price"
-                name="sellingPrice"
-                value={itemData.sellingPrice}
-                onChange={handleChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel htmlFor="unit">Unit</InputLabel>
-                <Select
-                  name="unit"
-                  value={itemData.unit}
-                  onChange={handleChange}
-                  label="Unit"
-                >
-                  <MenuItem value="">Select Unit</MenuItem>
-                  {unitOptions.map((unit) => (
-                    <MenuItem key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-
-          {/* Stock Info Section */}
-          <Typography variant="h6" mt={4} mb={2}>
-            Stock Info
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Stock Count"
-                name="stockCount"
-                value={itemData.stockCount}
-                onChange={handleChange}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Last GRN Date"
-                name="lastGRNDate"
-                type="date"
-                value={itemData.lastGRNDate}
-                onChange={handleChange}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Last PO Date"
-                name="lastPODate"
-                type="date"
-                value={itemData.lastPODate}
-                onChange={handleChange}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Last Purchase Price"
-                name="lastPurchasePrice"
-                value={itemData.lastPurchasePrice}
-                onChange={handleChange}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Remark"
-                name="remark"
-                value={itemData.remark}
-                onChange={handleChange}
-                fullWidth
-                multiline
-                rows={4}
-              />
-            </Grid>
-          </Grid>
-
-          {/* Submit Button */}
-          <div style={{ marginTop: "16px", textAlign: "right" }}>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-            >
-              Add Item
-            </Button>
-          </div>
-        </form>
-
-        {/* Toast Container */}
-        <ToastContainer position="top-right" />
+        <Typography variant="h6" mb={3} align="center">
+          description
+        </Typography>
+        <ProgressBarContainer>
+          <Step active={true}>✓</Step>
+          <StepConnector active={true}/>
+          <Step active={true}>✓</Step>
+          <StepConnector active={true} />
+          <Step active={activeStep >= 3}>✓</Step>
+          <StepConnector />
+          <Step active={false} />
+          <StepConnector />
+          <Step active={false} />
+        </ProgressBarContainer>
+        
+        <FileUploadContainer align="center">
+          {!isFileSelected ? (
+            <>
+              <Typography variant="body1" mb={2}>
+                Select a file or drag and drop here
+              </Typography>
+              <Button variant="contained" component="label">
+                Select File
+                <input type="file" hidden onChange={handleFileChange} />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Typography variant="body1" mb={2}>
+                File added
+              </Typography>
+              <Box display="flex" alignItems="center" mb={2}>
+                <Typography variant="body2" mr={2}>
+                  {selectedFile.name}
+                </Typography>
+                <Typography variant="body2">
+                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                </Typography>
+              </Box>
+              <Button variant="contained" color="secondary" onClick={handleRemoveFile}>
+                Remove File
+              </Button>
+            </>
+          )}
+        </FileUploadContainer>
+        <Box display="flex" justifyContent="flex-end" mt={3}>
+          <Button variant="outlined" color="secondary" style={{ marginRight: 8 }} onClick={handleRemoveFile} disabled={!isFileSelected}>
+            Cancel
+          </Button>
+          <Button variant="contained" color="primary" onClick={handleFileUpload} disabled={!isFileSelected}>
+            Upload
+          </Button>
+        </Box>
       </Paper>
-    </div>
+      <Snackbar open={!!errorMessage} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity="error">
+          {errorMessage}
+        </Alert>
+      </Snackbar>
+      <ToastContainer position="top-right" />
+    </Box>
   );
 };
 

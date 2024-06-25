@@ -1,0 +1,38 @@
+.App {
+    text-align: center;
+  }
+  
+  .App-header {
+    background-color: #282c34;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+  }
+  
+  .dashboard {
+    display: grid;
+    grid-template-areas:
+      'chart summary'
+      'bar pie';
+    grid-gap: 20px;
+    padding: 20px;
+  }
+  
+  .chart {
+    grid-area: chart;
+  }
+  
+  .summary {
+    grid-area: summary;
+  }
+  
+  .sentiment-bar {
+    grid-area: bar;
+  }
+  
+  .sentiment-pie {
+    grid-area: pie;
+  }
+  

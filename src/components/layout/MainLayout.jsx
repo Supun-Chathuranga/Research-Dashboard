@@ -9,7 +9,7 @@ const MainLayout = () => {
   return (
     <Box display="flex">
       {/* sidebar */}
-      <Sidebar sidebarWidth={sidebarWidth} />
+      
       {/* sidebar */}
 
       <Box

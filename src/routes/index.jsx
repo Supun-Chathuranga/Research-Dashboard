@@ -5,7 +5,8 @@ import MainLayout from "../components/layout/MainLayout";
 import AddItemPage from "../pages/AddItemPage";
 import ItemListPage from "../pages/ListItemPage"; // Import the ItemListPage component
 import ItemEditPage from "../pages/EditItemPage";
-
+import Analyze from "../pages/ReportAnalyse";
+import Compare from "../pages/compare";
 
 export const router = createBrowserRouter([
   {
@@ -17,8 +18,8 @@ export const router = createBrowserRouter([
         element: <LoginPage />
       },
       {
-        path: "add_item", // Change the path to "add_item"
-        element: <MainLayout />,
+        path: "file_upload", // Change the path to "add_item"
+        element: <AppLayout />,
         children: [
           {
             index: true,
@@ -29,7 +30,7 @@ export const router = createBrowserRouter([
       // Add a route for the ItemListPage
       {
         path: "item_list",
-        element: <MainLayout />,
+        element: <AppLayout />,
         children: [
           {
             index: true,
@@ -38,12 +39,32 @@ export const router = createBrowserRouter([
         ]
       },
       {
-        path: "item_edit/:id",
-        element: <MainLayout />,
+        path: "result",
+        element: <AppLayout />,
         children: [
           {
             index: true,
             element: <ItemEditPage />
+          }
+        ]
+      },
+      {
+        path: "Analyze",
+        element: <AppLayout />,
+        children: [
+          {
+            index: true,
+            element: <Analyze />
+          }
+        ]
+      },
+      {
+        path: "Compare",
+        element: <AppLayout />,
+        children: [
+          {
+            index: true,
+            element: <Compare />
           }
         ]
       }
